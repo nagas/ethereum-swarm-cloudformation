@@ -1,0 +1,176 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: MIT License
+Description: Launch Ethereum Swarm stack
+Parameters:
+  SwarmParameters:
+    Description: Swarm runtime parameters
+    Type: String
+    Default: "--debug --verbosity 3 --bzznetworkid 3"
+  SwarmAccountPassword:
+    Description: Password for Swarm Account
+    Type: String
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Can contain only ASCII characters.
+  InstanceType:
+    Description: Swarm EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+    - t2.small
+    ConstraintDescription: must be a valid EC2 instance type.
+  SSHLocation:
+    Description: Lockdown SSH access to Swarm EC2 instance (default can be accessed from anywhere)
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+Mappings:
+  AWSInstanceType2Arch:
+    t2.small:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0d19227302e8e4bb5
+Resources:
+  SwarmInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          InstallAndRun:
+          - Install
+        Install:
+          packages:
+            yum:
+              docker: []
+              git: []
+          files: 
+            /root/run-docker-containers.sh: 
+              content: !Sub | 
+                #!/bin/sh
+                
+                docker start watchtower || docker run -d --restart unless-stopped --name watchtower \
+                                            -v /var/run/docker.sock:/var/run/docker.sock v2tec/watchtower
+
+                docker rm -f ethereum-swarm
+                docker run --restart unless-stopped -d --name ethereum-swarm -e DATADIR=/data -e PASSWORD=${SwarmAccountPassword} \
+                  -v /data/swarm-data:/data ethdevops/swarm:latest -- ${SwarmParameters}
+              mode: "000750"
+              owner: "root"
+              group: "root"
+            /etc/cfn/hooks.d/cfn-docker-reloader.conf:
+              content: !Sub |
+                [cfn-docker-reloader-hook]
+                triggers=post.update
+                path=Resources.SwarmInstance.Metadata.AWS::CloudFormation::Init
+                action=/root/run-docker-containers.sh
+                runas=root
+              mode: "000400"
+              owner: "root"
+              group: "root"
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.SwarmInstance.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
+                runas=root
+              mode: "000400"
+              owner: "root"
+              group: "root"
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+              mode: "000400"
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              docker:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files: ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf", "/etc/cfn/hooks.d/cfn-docker-reloader.conf"]
+    Properties:
+      AvailabilityZone:
+        Fn::Join:
+        - ''
+        - - Ref: AWS::Region
+          - a
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      SecurityGroups:
+      - Ref: SwarmInstanceSecurityGroup
+      KeyName:
+        Ref: KeyName
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash -xe
+
+            # Format /dev/xvdk if it does not contain a partition yet
+            if [ "$(file -b -s /dev/xvdk)" == "data" ]; then
+              mkfs -t ext4 /dev/xvdk
+            fi
+
+            # Persist the volume in /etc/fstab so it gets mounted again
+            echo '/dev/xvdk /data ext4 defaults,nofail 0 2' >> /etc/fstab
+
+            mkdir -p /data
+            mount -a
+            mkdir -p /data/swarm-data
+
+            echo >> /etc/rc.local
+            echo "/root/run-docker-containers.sh" >> /etc/rc.local
+
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SwarmInstance --region ${AWS::Region}          
+      Volumes:
+      - VolumeId: !ImportValue SwarmDataVolume
+        Device: "/dev/sdk"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT5M
+
+  SwarmInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp:
+          Ref: SSHLocation
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref SwarmInstance
+      EIP: !ImportValue SwarmPublicIP
+
+Outputs:
+  PublicIP:
+    Description: Public IP address
+    Value: !ImportValue SwarmPublicIP
+  SwarmAccountPassword:
+    Description: Swarm Account Password
+    Value: !Ref SwarmAccountPassword

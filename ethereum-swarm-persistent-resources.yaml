@@ -1,0 +1,37 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: MIT License
+Description: Create persistent resources Ethereum Swarm stack
+Parameters:
+  SwarmDataDiskSize:
+    Description: Swarm data disk size in gigabytes
+    Default: 50
+    Type: Number
+
+Resources:
+  SwarmDataVolume:
+    Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
+    Properties:
+      Size: !Ref SwarmDataDiskSize
+      AvailabilityZone:
+        Fn::Join:
+        - ''
+        - - Ref: AWS::Region
+          - a
+
+  PublicIP:
+    Type: AWS::EC2::EIP
+
+Outputs:
+  PublicIP:
+    Description: Public IP address
+    Value: !Ref 'PublicIP'
+    Export:
+      Name: SwarmPublicIP
+  SwarmDataVolume:
+    Description: Swarm Data Volume
+    Value: !Ref  'SwarmDataVolume'
+    Export:
+      Name: SwarmDataVolume
