@@ -57,9 +57,89 @@ Mappings:
   AWSInstanceType2Arch:
     t2.small:
       Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.large:
+      Arch: HVM64
+    t3.small:
+      Arch: HVM64
+    t3.medium:
+      Arch: HVM64
+    t3.large:
+      Arch: HVM64
+    m4.large:
+      Arch: HVM64
+    m4.xlarge:
+      Arch: HVM64
+    m5.large:
+      Arch: HVM64
+    m5.xlarge:
+      Arch: HVM64
+    m5a.large:
+      Arch: HVM64
+    m5a.xlarge:
+      Arch: HVM64
+    c4.large:
+      Arch: HVM64
+    c4.xlarge:
+      Arch: HVM64
+    c5.large:
+      Arch: HVM64
+    c5.xlarge:
+      Arch: HVM64
+    c5n.large:
+      Arch: HVM64
+    c5n.xlarge:
+      Arch: HVM64
+    r4.large:
+      Arch: HVM64
+    r4.xlarge:
+      Arch: HVM64
+    r5.large:
+      Arch: HVM64
+    r5.xlarge:
+      Arch: HVM64
+    r5a.large:
+      Arch: HVM64
+    r5a.xlarge:
+      Arch: HVM64
   AWSRegionArch2AMI:
     us-east-1:
       HVM64: ami-0d19227302e8e4bb5
+    us-east-2:
+      HVM64: ami-0ec1948d5caef658a
+    us-west-1:
+      HVM64: ami-0c3ca2c6f4edb5546
+    us-west-2:
+      HVM64: ami-0b5913cdbba67598e
+    ap-south-1:
+      HVM64: ami-04611067ce944d00f
+    ap-northeast-1:
+      HVM64: ami-016ad6443b4a3d960
+    ap-northeast-2:
+      HVM64: ami-0befa04e7b1ba50f9
+    ap-northeast-3:
+      HVM64: ami-0afdc600eb90f06c8
+    ap-southeast-1:
+      HVM64: ami-00cbdef8d2acf44a7
+    ap-southeast-2:
+      HVM64: ami-0fbfb4926256a1f1e
+    ca-central-1:
+      HVM64: ami-08f0313c2834a2ff7
+    cn-north-1:
+      HVM64: ami-0273771427032a4e6
+    cn-northwest-1:
+      HVM64: ami-0ff05dc898c27df83
+    eu-central-1:
+      HVM64: ami-0f0debf49705e047c
+    eu-west-1:
+      HVM64: ami-06e710681e5ee07aa
+    eu-west-2:
+      HVM64: ami-096629e5eb19568cc
+    eu-west-3:
+      HVM64: ami-044e19acaba1ddac8
+    sa-east-1:
+      HVM64: ami-088018633b4291710
 Resources:
   SwarmInstance:
     Type: AWS::EC2::Instance
