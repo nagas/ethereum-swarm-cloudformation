@@ -18,6 +18,7 @@ Resources:
     DeletionPolicy: Snapshot
     Properties:
       Size: !Ref SwarmDataDiskSize
+      VolumeType: gp2
       AvailabilityZone: !Ref "AvailabilityZone"
   PublicIP:
     Type: AWS::EC2::EIP
