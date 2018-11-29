@@ -51,6 +51,14 @@ Resources:
               docker: []
               git: []
           files: 
+            /root/resize-swarm-volume.sh:
+              content: !Sub |
+                #!/bin/sh
+
+                resize2fs /dev/xvdk
+              mode: "000750"
+              owner: "root"
+              group: "root"
             /root/run-docker-containers.sh: 
               content: !Sub | 
                 #!/bin/sh
@@ -139,6 +147,7 @@ Resources:
             mkdir -p /data/swarm-data
 
             echo >> /etc/rc.local
+            echo "/root/resize-swarm-volume.sh" >> /etc/rc.local
             echo "/root/run-docker-containers.sh" >> /etc/rc.local
 
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
