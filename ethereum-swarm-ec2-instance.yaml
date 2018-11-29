@@ -68,7 +68,7 @@ Resources:
 
                 docker rm -f ethereum-swarm
                 docker run --restart unless-stopped -d --name ethereum-swarm -e DATADIR=/data -e PASSWORD=${SwarmAccountPassword} \
-                  -v /data/swarm-data:/data ethdevops/swarm:latest -- ${SwarmParameters}
+                  -v /data/swarm-data:/data ethdevops/swarm:latest ${SwarmParameters}
               mode: "000750"
               owner: "root"
               group: "root"
