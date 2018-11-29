@@ -20,6 +20,10 @@ Resources:
       Size: !Ref SwarmDataDiskSize
       VolumeType: gp2
       AvailabilityZone: !Ref "AvailabilityZone"
+      Tags:
+        -
+          Key: 'Name'
+          Value: !Ref 'AWS::StackName'
   PublicIP:
     Type: AWS::EC2::EIP
 

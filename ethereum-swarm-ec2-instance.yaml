@@ -126,6 +126,10 @@ Resources:
       - Ref: SwarmInstanceSecurityGroup
       KeyName:
         Ref: KeyName
+      Tags:
+        -
+          Key: 'Name'
+          Value: !Ref 'AWS::StackName'
       UserData:
         Fn::Base64: !Sub |
             #!/bin/bash -xe
