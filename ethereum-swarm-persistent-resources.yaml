@@ -4,6 +4,9 @@ Metadata:
   License: MIT License
 Description: Create persistent resources Ethereum Swarm stack
 Parameters:
+  AvailabilityZone:
+    Description: Availability zone to be used
+    Type: AWS::EC2::AvailabilityZone::Name
   SwarmDataDiskSize:
     Description: Swarm data disk size in gigabytes
     Default: 50
@@ -15,12 +18,7 @@ Resources:
     DeletionPolicy: Snapshot
     Properties:
       Size: !Ref SwarmDataDiskSize
-      AvailabilityZone:
-        Fn::Join:
-        - ''
-        - - Ref: AWS::Region
-          - a
-
+      AvailabilityZone: !Ref "AvailabilityZone"
   PublicIP:
     Type: AWS::EC2::EIP
 
@@ -35,3 +33,8 @@ Outputs:
     Value: !Ref  'SwarmDataVolume'
     Export:
       Name: SwarmDataVolume
+  AvailabilityZone:
+    Description: Availability Zone
+    Value: !Ref  'AvailabilityZone'
+    Export:
+      Name: AvailabilityZone

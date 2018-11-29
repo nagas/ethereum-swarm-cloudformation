@@ -111,11 +111,7 @@ Resources:
                 ensureRunning: 'true'
                 files: ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf", "/etc/cfn/hooks.d/cfn-docker-reloader.conf"]
     Properties:
-      AvailabilityZone:
-        Fn::Join:
-        - ''
-        - - Ref: AWS::Region
-          - a
+      AvailabilityZone: !ImportValue AvailabilityZone
       ImageId:
         Fn::FindInMap:
         - AWSRegionArch2AMI
