@@ -21,6 +21,29 @@ Parameters:
     Default: t2.small
     AllowedValues:
     - t2.small
+    - t2.medium
+    - t2.large
+    - t3.small
+    - t3.medium
+    - t3.large
+    - m4.large
+    - m4.xlarge
+    - m5.large
+    - m5.xlarge
+    - m5a.large
+    - m5a.xlarge
+    - c4.large
+    - c4.xlarge
+    - c5.large
+    - c5.xlarge
+    - c5n.large
+    - c5n.xlarge
+    - r4.large
+    - r4.xlarge
+    - r5.large
+    - r5.xlarge
+    - r5a.large
+    - r5a.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   SSHLocation:
     Description: Lockdown SSH access to Swarm EC2 instance (default can be accessed from anywhere)
@@ -135,7 +158,7 @@ Resources:
             #!/bin/bash -xe
 
             # Format /dev/xvdk if it does not contain a partition yet
-            if [ "$(file -b -s /dev/xvdk)" == "data" ]; then
+            if [ "$(file -L -b -s /dev/xvdk)" == "data" ]; then
               mkfs -t ext4 /dev/xvdk
             fi
 
@@ -154,7 +177,7 @@ Resources:
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SwarmInstance --region ${AWS::Region}          
       Volumes:
       - VolumeId: !ImportValue SwarmDataVolume
-        Device: "/dev/sdk"
+        Device: "/dev/xvdk"
     CreationPolicy:
       ResourceSignal:
         Timeout: PT5M
