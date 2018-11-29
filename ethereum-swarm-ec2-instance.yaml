@@ -2,7 +2,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Metadata:
   License: MIT License
-Description: Launch Ethereum Swarm stack
+Description: Manage EC2 instance for Ethereum Swarm
 Parameters:
   SwarmParameters:
     Description: Swarm runtime parameters
