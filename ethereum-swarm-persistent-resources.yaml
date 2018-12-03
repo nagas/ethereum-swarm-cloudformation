@@ -11,15 +11,25 @@ Parameters:
     Description: Swarm data disk size in gigabytes
     Default: 50
     Type: Number
+  SnapshotID:
+    Description: If provided, EBS volume will be created from this snapshot
+    Default: "CREATE_EMPTY_VOLUME"
+    Type: String
+
+Conditions:
+  RestoreFromSnapshot: !Not [!Equals [ !Ref SnapshotID, "CREATE_EMPTY_VOLUME"]]
 
 Resources:
   SwarmDataVolume:
     Type: AWS::EC2::Volume
     DeletionPolicy: Snapshot
     Properties:
-      Size: !Ref SwarmDataDiskSize
+      Size:
+        !If [RestoreFromSnapshot, !Ref "AWS::NoValue", !Ref SwarmDataDiskSize]
       VolumeType: gp2
       AvailabilityZone: !Ref "AvailabilityZone"
+      SnapshotId:
+        !If [RestoreFromSnapshot, !Ref SnapshotID, !Ref "AWS::NoValue"]
       Tags:
         -
           Key: 'Name'
