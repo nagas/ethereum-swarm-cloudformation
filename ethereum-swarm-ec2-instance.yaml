@@ -5,18 +5,18 @@ Metadata:
 Description: Manage EC2 instance for Ethereum Swarm
 Parameters:
   SwarmParameters:
-    Description: Swarm runtime parameters
+    Description: (Optional) Swarm runtime parameters
     Type: String
     Default: "--debug --verbosity 3 --bzznetworkid 3"
   SwarmAccountPassword:
-    Description: Password for Swarm Account
+    Description: (Required) Password for Swarm Account
     Type: String
   KeyName:
-    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Description: (Required) Name of an existing EC2 KeyPair to enable SSH access to the instance
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: Can contain only ASCII characters.
   InstanceType:
-    Description: Swarm EC2 instance type
+    Description: (Required) Swarm EC2 instance type
     Type: String
     Default: t2.small
     AllowedValues:
@@ -46,7 +46,7 @@ Parameters:
     - r5a.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
   SSHLocation:
-    Description: Lockdown SSH access to Swarm EC2 instance (default can be accessed from anywhere)
+    Description: (Required) Lockdown SSH access to Swarm EC2 instance (default can be accessed from anywhere)
     Type: String
     MinLength: '9'
     MaxLength: '18'

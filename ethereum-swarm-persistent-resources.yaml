@@ -5,14 +5,14 @@ Metadata:
 Description: Manage persistent resources for Ethereum Swarm
 Parameters:
   AvailabilityZone:
-    Description: Availability zone to be used
+    Description: (Required) Availability zone to be used
     Type: AWS::EC2::AvailabilityZone::Name
   SwarmDataDiskSize:
-    Description: Swarm data disk size in gigabytes
+    Description: (Required) Swarm data disk size in gigabytes
     Default: 50
     Type: Number
   SnapshotID:
-    Description: If provided, EBS volume will be created from this snapshot
+    Description: (Optional) Restore EBS volume from a snapshot
     Default: ""
     Type: String
 
