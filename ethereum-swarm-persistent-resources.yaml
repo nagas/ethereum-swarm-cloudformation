@@ -13,11 +13,11 @@ Parameters:
     Type: Number
   SnapshotID:
     Description: (Optional) Restore EBS volume from a snapshot
-    Default: ""
+    Default: ''
     Type: String
 
 Conditions:
-  RestoreFromSnapshot: !Not [!Equals [ !Ref SnapshotID, ""]]
+  RestoreFromSnapshot: !Not [!Equals [ !Ref 'SnapshotID', '']]
 
 Resources:
   SwarmDataVolume:
@@ -25,14 +25,14 @@ Resources:
     DeletionPolicy: Snapshot
     Properties:
       Size:
-        !If [RestoreFromSnapshot, !Ref "AWS::NoValue", !Ref SwarmDataDiskSize]
+        !If [RestoreFromSnapshot, !Ref 'AWS::NoValue', !Ref 'SwarmDataDiskSize']
       VolumeType: gp2
-      AvailabilityZone: !Ref "AvailabilityZone"
+      AvailabilityZone: !Ref 'AvailabilityZone'
       SnapshotId:
-        !If [RestoreFromSnapshot, !Ref SnapshotID, !Ref "AWS::NoValue"]
+        !If [RestoreFromSnapshot, !Ref 'SnapshotID', !Ref 'AWS::NoValue']
       Tags:
         -
-          Key: 'Name'
+          Key: Name
           Value: !Ref 'AWS::StackName'
   PublicIP:
     Type: AWS::EC2::EIP
@@ -45,11 +45,11 @@ Outputs:
       Name: SwarmPublicIP
   SwarmDataVolume:
     Description: Swarm Data Volume
-    Value: !Ref  'SwarmDataVolume'
+    Value: !Ref 'SwarmDataVolume'
     Export:
       Name: SwarmDataVolume
   AvailabilityZone:
     Description: Availability Zone
-    Value: !Ref  'AvailabilityZone'
+    Value: !Ref 'AvailabilityZone'
     Export:
       Name: AvailabilityZone

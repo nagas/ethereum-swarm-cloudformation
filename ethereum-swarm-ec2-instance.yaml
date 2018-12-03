@@ -7,7 +7,7 @@ Parameters:
   SwarmParameters:
     Description: (Optional) Swarm runtime parameters
     Type: String
-    Default: "--debug --verbosity 3 --bzznetworkid 3"
+    Default: --debug --verbosity 3 --bzznetworkid 3
   SwarmAccountPassword:
     Description: (Required) Password for Swarm Account
     Type: String
@@ -159,9 +159,9 @@ Resources:
                 #!/bin/sh
 
                 resize2fs /dev/xvdk
-              mode: "000750"
-              owner: "root"
-              group: "root"
+              mode: '000750'
+              owner: root
+              group: root
             /root/run-docker-containers.sh: 
               content: !Sub | 
                 #!/bin/sh
@@ -172,9 +172,9 @@ Resources:
                 docker rm -f ethereum-swarm
                 docker run --restart unless-stopped -d --name ethereum-swarm -e DATADIR=/data -e PASSWORD=${SwarmAccountPassword} \
                   -v /data/swarm-data:/data ethdevops/swarm:latest ${SwarmParameters}
-              mode: "000750"
-              owner: "root"
-              group: "root"
+              mode: '000750'
+              owner: root
+              group: root
             /etc/cfn/hooks.d/cfn-docker-reloader.conf:
               content: !Sub |
                 [cfn-docker-reloader-hook]
@@ -182,9 +182,9 @@ Resources:
                 path=Resources.SwarmInstance.Metadata.AWS::CloudFormation::Init
                 action=/root/run-docker-containers.sh
                 runas=root
-              mode: "000400"
-              owner: "root"
-              group: "root"
+              mode: '000400'
+              owner: root
+              group: root
             /etc/cfn/hooks.d/cfn-auto-reloader.conf:
               content: !Sub |
                 [cfn-auto-reloader-hook]
@@ -192,16 +192,16 @@ Resources:
                 path=Resources.SwarmInstance.Metadata.AWS::CloudFormation::Init
                 action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
                 runas=root
-              mode: "000400"
-              owner: "root"
-              group: "root"
+              mode: '000400'
+              owner: root
+              group: root
             /etc/cfn/cfn-hup.conf:
               content: !Sub |
                 [main]
                 stack=${AWS::StackId}
                 region=${AWS::Region}
                 interval=1
-              mode: "000400"
+              mode: '000400'
               owner: root
               group: root
           services:
@@ -212,26 +212,26 @@ Resources:
               cfn-hup:
                 enabled: 'true'
                 ensureRunning: 'true'
-                files: ["/etc/cfn/cfn-hup.conf", "/etc/cfn/hooks.d/cfn-auto-reloader.conf", "/etc/cfn/hooks.d/cfn-docker-reloader.conf"]
+                files: ['/etc/cfn/cfn-hup.conf', '/etc/cfn/hooks.d/cfn-auto-reloader.conf', '/etc/cfn/hooks.d/cfn-docker-reloader.conf']
     Properties:
-      AvailabilityZone: !ImportValue AvailabilityZone
+      AvailabilityZone: !ImportValue 'AvailabilityZone'
       ImageId:
         Fn::FindInMap:
         - AWSRegionArch2AMI
-        - Ref: AWS::Region
+        - !Ref 'AWS::Region'
         - Fn::FindInMap:
           - AWSInstanceType2Arch
-          - Ref: InstanceType
+          - !Ref 'InstanceType'
           - Arch
       InstanceType:
-        Ref: InstanceType
+        !Ref 'InstanceType'
       SecurityGroups:
-      - Ref: SwarmInstanceSecurityGroup
+      - !Ref 'SwarmInstanceSecurityGroup'
       KeyName:
-        Ref: KeyName
+        !Ref 'KeyName'
       Tags:
         -
-          Key: 'Name'
+          Key: Name
           Value: !Ref 'AWS::StackName'
       UserData:
         Fn::Base64: !Sub |
@@ -250,14 +250,14 @@ Resources:
             mkdir -p /data/swarm-data
 
             echo >> /etc/rc.local
-            echo "/root/resize-swarm-volume.sh" >> /etc/rc.local
-            echo "/root/run-docker-containers.sh" >> /etc/rc.local
+            echo '/root/resize-swarm-volume.sh' >> /etc/rc.local
+            echo '/root/run-docker-containers.sh' >> /etc/rc.local
 
             /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SwarmInstance --region ${AWS::Region}          
       Volumes:
-      - VolumeId: !ImportValue SwarmDataVolume
-        Device: "/dev/xvdk"
+      - VolumeId: !ImportValue 'SwarmDataVolume'
+        Device: /dev/xvdk
     CreationPolicy:
       ResourceSignal:
         Timeout: PT5M
@@ -276,13 +276,13 @@ Resources:
   IPAssoc:
     Type: AWS::EC2::EIPAssociation
     Properties:
-      InstanceId: !Ref SwarmInstance
-      EIP: !ImportValue SwarmPublicIP
+      InstanceId: !Ref 'SwarmInstance'
+      EIP: !ImportValue 'SwarmPublicIP'
 
 Outputs:
   PublicIP:
     Description: Public IP address
-    Value: !ImportValue SwarmPublicIP
+    Value: !ImportValue 'SwarmPublicIP'
   SwarmAccountPassword:
     Description: Swarm Account Password
-    Value: !Ref SwarmAccountPassword
+    Value: !Ref 'SwarmAccountPassword'
