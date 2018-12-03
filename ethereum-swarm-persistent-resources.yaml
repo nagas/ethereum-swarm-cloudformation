@@ -13,11 +13,11 @@ Parameters:
     Type: Number
   SnapshotID:
     Description: If provided, EBS volume will be created from this snapshot
-    Default: "CREATE_EMPTY_VOLUME"
+    Default: ""
     Type: String
 
 Conditions:
-  RestoreFromSnapshot: !Not [!Equals [ !Ref SnapshotID, "CREATE_EMPTY_VOLUME"]]
+  RestoreFromSnapshot: !Not [!Equals [ !Ref SnapshotID, ""]]
 
 Resources:
   SwarmDataVolume:
