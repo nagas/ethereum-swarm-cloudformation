@@ -1,0 +1,288 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: MIT License
+Description: Manage EC2 instance for Ethereum Swarm
+Parameters:
+  SwarmParameters:
+    Description: (Optional) Swarm runtime parameters
+    Type: String
+    Default: --debug --verbosity 3 --bzznetworkid 3
+  SwarmAccountPassword:
+    Description: (Required) Password for Swarm Account
+    Type: String
+  KeyName:
+    Description: (Required) Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Can contain only ASCII characters.
+  InstanceType:
+    Description: (Required) Swarm EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+    - t2.small
+    - t2.medium
+    - t2.large
+    - t3.small
+    - t3.medium
+    - t3.large
+    - m4.large
+    - m4.xlarge
+    - m5.large
+    - m5.xlarge
+    - m5a.large
+    - m5a.xlarge
+    - c4.large
+    - c4.xlarge
+    - c5.large
+    - c5.xlarge
+    - c5n.large
+    - c5n.xlarge
+    - r4.large
+    - r4.xlarge
+    - r5.large
+    - r5.xlarge
+    - r5a.large
+    - r5a.xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+  SSHLocation:
+    Description: (Required) Lockdown SSH access to Swarm EC2 instance (default can be accessed from anywhere)
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+Mappings:
+  AWSInstanceType2Arch:
+    t2.small:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.large:
+      Arch: HVM64
+    t3.small:
+      Arch: HVM64
+    t3.medium:
+      Arch: HVM64
+    t3.large:
+      Arch: HVM64
+    m4.large:
+      Arch: HVM64
+    m4.xlarge:
+      Arch: HVM64
+    m5.large:
+      Arch: HVM64
+    m5.xlarge:
+      Arch: HVM64
+    m5a.large:
+      Arch: HVM64
+    m5a.xlarge:
+      Arch: HVM64
+    c4.large:
+      Arch: HVM64
+    c4.xlarge:
+      Arch: HVM64
+    c5.large:
+      Arch: HVM64
+    c5.xlarge:
+      Arch: HVM64
+    c5n.large:
+      Arch: HVM64
+    c5n.xlarge:
+      Arch: HVM64
+    r4.large:
+      Arch: HVM64
+    r4.xlarge:
+      Arch: HVM64
+    r5.large:
+      Arch: HVM64
+    r5.xlarge:
+      Arch: HVM64
+    r5a.large:
+      Arch: HVM64
+    r5a.xlarge:
+      Arch: HVM64
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0d19227302e8e4bb5
+    us-east-2:
+      HVM64: ami-0ec1948d5caef658a
+    us-west-1:
+      HVM64: ami-0c3ca2c6f4edb5546
+    us-west-2:
+      HVM64: ami-0b5913cdbba67598e
+    ap-south-1:
+      HVM64: ami-04611067ce944d00f
+    ap-northeast-1:
+      HVM64: ami-016ad6443b4a3d960
+    ap-northeast-2:
+      HVM64: ami-0befa04e7b1ba50f9
+    ap-northeast-3:
+      HVM64: ami-0afdc600eb90f06c8
+    ap-southeast-1:
+      HVM64: ami-00cbdef8d2acf44a7
+    ap-southeast-2:
+      HVM64: ami-0fbfb4926256a1f1e
+    ca-central-1:
+      HVM64: ami-08f0313c2834a2ff7
+    cn-north-1:
+      HVM64: ami-0273771427032a4e6
+    cn-northwest-1:
+      HVM64: ami-0ff05dc898c27df83
+    eu-central-1:
+      HVM64: ami-0f0debf49705e047c
+    eu-west-1:
+      HVM64: ami-06e710681e5ee07aa
+    eu-west-2:
+      HVM64: ami-096629e5eb19568cc
+    eu-west-3:
+      HVM64: ami-044e19acaba1ddac8
+    sa-east-1:
+      HVM64: ami-088018633b4291710
+Resources:
+  SwarmInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          InstallAndRun:
+          - Install
+        Install:
+          packages:
+            yum:
+              docker: []
+              git: []
+          files: 
+            /root/resize-swarm-volume.sh:
+              content: !Sub |
+                #!/bin/sh
+
+                resize2fs /dev/xvdk
+              mode: '000750'
+              owner: root
+              group: root
+            /root/run-docker-containers.sh: 
+              content: !Sub | 
+                #!/bin/sh
+                
+                docker start watchtower || docker run -d --restart unless-stopped --name watchtower \
+                                            -v /var/run/docker.sock:/var/run/docker.sock v2tec/watchtower
+
+                docker rm -f ethereum-swarm
+                docker run --restart unless-stopped -d --name ethereum-swarm -e DATADIR=/data -e PASSWORD=${SwarmAccountPassword} \
+                  -v /data/swarm-data:/data ethdevops/swarm:latest ${SwarmParameters}
+              mode: '000750'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-docker-reloader.conf:
+              content: !Sub |
+                [cfn-docker-reloader-hook]
+                triggers=post.update
+                path=Resources.SwarmInstance.Metadata.AWS::CloudFormation::Init
+                action=/root/run-docker-containers.sh
+                runas=root
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Sub |
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.SwarmInstance.Metadata.AWS::CloudFormation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
+                runas=root
+              mode: '000400'
+              owner: root
+              group: root
+            /etc/cfn/cfn-hup.conf:
+              content: !Sub |
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=1
+              mode: '000400'
+              owner: root
+              group: root
+          services:
+            sysvinit:
+              docker:
+                enabled: 'true'
+                ensureRunning: 'true'
+              cfn-hup:
+                enabled: 'true'
+                ensureRunning: 'true'
+                files: ['/etc/cfn/cfn-hup.conf', '/etc/cfn/hooks.d/cfn-auto-reloader.conf', '/etc/cfn/hooks.d/cfn-docker-reloader.conf']
+    Properties:
+      AvailabilityZone: !ImportValue 'AvailabilityZone'
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - !Ref 'AWS::Region'
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - !Ref 'InstanceType'
+          - Arch
+      InstanceType:
+        !Ref 'InstanceType'
+      SecurityGroups:
+      - !Ref 'SwarmInstanceSecurityGroup'
+      KeyName:
+        !Ref 'KeyName'
+      Tags:
+        -
+          Key: Name
+          Value: !Ref 'AWS::StackName'
+      UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash -xe
+
+            # Format /dev/xvdk if it does not contain a partition yet
+            if [ "$(file -L -b -s /dev/xvdk)" == "data" ]; then
+              mkfs -t ext4 /dev/xvdk
+            fi
+
+            # Persist the volume in /etc/fstab so it gets mounted again
+            echo '/dev/xvdk /data ext4 defaults,nofail 0 2' >> /etc/fstab
+
+            mkdir -p /data
+            mount -a
+            mkdir -p /data/swarm-data
+
+            echo >> /etc/rc.local
+            echo '/root/resize-swarm-volume.sh' >> /etc/rc.local
+            echo '/root/run-docker-containers.sh' >> /etc/rc.local
+
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource SwarmInstance --configsets InstallAndRun --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SwarmInstance --region ${AWS::Region}          
+      Volumes:
+      - VolumeId: !ImportValue 'SwarmDataVolume'
+        Device: /dev/xvdk
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT5M
+
+  SwarmInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp:
+          Ref: SSHLocation
+
+  IPAssoc:
+    Type: AWS::EC2::EIPAssociation
+    Properties:
+      InstanceId: !Ref 'SwarmInstance'
+      EIP: !ImportValue 'SwarmPublicIP'
+
+Outputs:
+  PublicIP:
+    Description: Public IP address
+    Value: !ImportValue 'SwarmPublicIP'
+  SwarmAccountPassword:
+    Description: Swarm Account Password
+    Value: !Ref 'SwarmAccountPassword'

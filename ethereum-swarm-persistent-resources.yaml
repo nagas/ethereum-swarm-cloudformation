@@ -1,0 +1,55 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: MIT License
+Description: Manage persistent resources for Ethereum Swarm
+Parameters:
+  AvailabilityZone:
+    Description: (Required) Availability zone to be used
+    Type: AWS::EC2::AvailabilityZone::Name
+  SwarmDataDiskSize:
+    Description: (Required) Swarm data disk size in gigabytes
+    Default: 50
+    Type: Number
+  SnapshotID:
+    Description: (Optional) Restore EBS volume from a snapshot
+    Default: ''
+    Type: String
+
+Conditions:
+  RestoreFromSnapshot: !Not [!Equals [ !Ref 'SnapshotID', '']]
+
+Resources:
+  SwarmDataVolume:
+    Type: AWS::EC2::Volume
+    DeletionPolicy: Snapshot
+    Properties:
+      Size:
+        !If [RestoreFromSnapshot, !Ref 'AWS::NoValue', !Ref 'SwarmDataDiskSize']
+      VolumeType: gp2
+      AvailabilityZone: !Ref 'AvailabilityZone'
+      SnapshotId:
+        !If [RestoreFromSnapshot, !Ref 'SnapshotID', !Ref 'AWS::NoValue']
+      Tags:
+        -
+          Key: Name
+          Value: !Ref 'AWS::StackName'
+  PublicIP:
+    Type: AWS::EC2::EIP
+
+Outputs:
+  PublicIP:
+    Description: Public IP address
+    Value: !Ref 'PublicIP'
+    Export:
+      Name: SwarmPublicIP
+  SwarmDataVolume:
+    Description: Swarm Data Volume
+    Value: !Ref 'SwarmDataVolume'
+    Export:
+      Name: SwarmDataVolume
+  AvailabilityZone:
+    Description: Availability Zone
+    Value: !Ref 'AvailabilityZone'
+    Export:
+      Name: AvailabilityZone
